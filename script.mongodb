@@ -1,0 +1,117 @@
+// --- 1. Seleccionar la Base de Datos ---
+// Este comando le dice a MongoDB que todas las operaciones siguientes
+// se ejecutarán sobre la base de datos 'speakDB'.
+use('speakDB');
+
+// --- 2. Inserción de Usuarios y Captura de IDs ---
+console.log("--- Creando Usuarios ---");
+
+// Insertamos el primer usuario. 'db.users.insertOne' es el comando.
+// El objeto {...} es el documento JSON que se inserta.
+// Guardamos el resultado de la operación en 'resultadoAranguiz'.
+const resultadoAranguiz = db.users.insertOne({
+    username: "Aranguiz",
+    email: "aranguiz@speak.com",
+    servers: []
+});
+// Capturamos el ID único (_id) que MongoDB generó para este usuario.
+const idAranguiz = resultadoAranguiz.insertedId;
+print(`ID de Aranguiz: ${idAranguiz}`); // 'print' funciona en mongosh/playgrounds
+
+const resultadoBittner = db.users.insertOne({
+    username: "Bittner",
+    email: "bittner@speak.com",
+    servers: []
+});
+const idBittner = resultadoBittner.insertedId;
+print(`ID de Bittner: ${idBittner}`);
+
+const resultadoAlarcon = db.users.insertOne({
+    username: "Alarcon",
+    email: "alarcon@speak.com",
+    servers: []
+});
+const idAlarcon = resultadoAlarcon.insertedId;
+print(`ID de Alarcon: ${idAlarcon}`);
+
+// --- 3. Inserción del Servidor ---
+console.log("--- Creando Servidor ---");
+
+// Generamos IDs únicos AHORA para usarlos DENTRO del documento.
+// Esto es útil para que el ID del canal sea un campo propio
+// y podamos referenciarlo fácilmente en el futuro.
+const idCanalGeneral = new ObjectId();
+const idCanalProyectos = new ObjectId();
+
+const resultadoServidor = db.servers.insertOne({
+    name: "Data Science Hub",
+    // Usamos la variable 'idAranguiz' capturada antes para la referencia.
+    owner_id: idAranguiz,
+    // 'channels' es un array de documentos INC_RUSTADOS (embedded)
+    channels: [{
+        channel_id: idCanalGeneral, // Usamos el ID generado
+        name: "general",
+        type: "text"
+    }, {
+        channel_id: idCanalProyectos,
+        name: "project-work",
+        type: "text"
+    }],
+    messages: [] // Array para mensajes recientes (patrón de incrustación)
+});
+// Capturamos el ID del nuevo servidor
+const idServidor = resultadoServidor.insertedId;
+print(`ID del Servidor: ${idServidor}`);
+
+// --- 4. Actualizar Usuarios para Pertenencia al Servidor (UPDATE) ---
+console.log("--- Actualizando pertenencia de usuarios ---");
+
+// 'updateOne' busca un documento ({_id: ...}) y lo modifica ({$push: ...})
+// '$push' es un operador que AÑADE un elemento a un array.
+db.users.updateOne({ _id: idAranguiz }, {
+    $push: { servers: { server_id: idServidor, nickname: "Kenaii" } }
+});
+
+db.users.updateOne({ _id: bittnerId }, {
+    $push: { servers: { server_id: idServidor, nickname: "Kenzo" } }
+});
+
+db.users.updateOne({ _id: idAlarcon }, {
+    $push: { servers: { server_id: idServidor, nickname: "Chencho" } }
+});
+
+// --- 5. Inserción de Mensajes Recientes (INC_RUSTADO) ---
+console.log("--- Insertando mensaje reciente (incrustado) ---");
+
+// Buscamos el servidor Y el canal específico (por su 'channel_id')
+db.servers.updateOne({
+    _id: idServidor,
+    "channels.channel_id": idCanalGeneral // Así se busca dentro de un array
+}, {
+    // Añadimos un nuevo mensaje al array 'messages' dentro del servidor.
+    $push: {
+        messages: {
+            message_id: new ObjectId(),
+            channel_id: idCanalGeneral,
+            author_id: idAranguiz,
+            content: "¡Bienvenidos! Usaremos 'project-work' para avances.",
+            timestamp: new Date()
+        }
+    }
+});
+
+// --- 6. Inserción de Mensaje Histórico (COLECCIÓN SEPARADA) ---
+console.log("--- Insertando mensaje histórico ---");
+
+// Insertamos un documento en la colección 'messages' (no en 'servers').
+// Este es un ejemplo del patrón "Bucket" para mensajes antiguos
+// que no queremos incrustar para no hacer el documento 'servers' muy grande.
+db.messages.insertOne({
+    server_id: idServidor,
+    channel_id: idCanalGeneral,
+    author_id: idBittner,
+    content: "¡Genial! Gracias por la bienvenida.",
+    timestamp: new Date()
+});
+
+console.log("--- Proceso de Creación Completado ---");
