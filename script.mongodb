@@ -1,26 +1,21 @@
-// --- 1. Seleccionar la Base de Datos ---
-// Este comando le dice a MongoDB que todas las operaciones siguientes
-// se ejecutarán sobre la base de datos 'speakDB'.
-use('speakDB');
+// 1. Seleccionar la Base de Datos
+use('ChilegamesDB');
 
-// --- 2. Inserción de Usuarios y Captura de IDs ---
-console.log("--- Creando Usuarios ---");
+// 2. Inserción de Usuarios y Captura de IDs
+console.log("Creando Usuarios");
 
-// Insertamos el primer usuario. 'db.users.insertOne' es el comando.
-// El objeto {...} es el documento JSON que se inserta.
-// Guardamos el resultado de la operación en 'resultadoAranguiz'.
 const resultadoAranguiz = db.users.insertOne({
     username: "Aranguiz",
-    email: "aranguiz@speak.com",
+    email: "aranguiz@chilegames.com",
     servers: []
 });
-// Capturamos el ID único (_id) que MongoDB generó para este usuario.
+// Capturamos el ID único que MongoDB generó para este usuario.
 const idAranguiz = resultadoAranguiz.insertedId;
-print(`ID de Aranguiz: ${idAranguiz}`); // 'print' funciona en mongosh/playgrounds
+print(`ID de Aranguiz: ${idAranguiz}`);
 
 const resultadoBittner = db.users.insertOne({
     username: "Bittner",
-    email: "bittner@speak.com",
+    email: "bittner@chilegames.com",
     servers: []
 });
 const idBittner = resultadoBittner.insertedId;
@@ -28,14 +23,14 @@ print(`ID de Bittner: ${idBittner}`);
 
 const resultadoAlarcon = db.users.insertOne({
     username: "Alarcon",
-    email: "alarcon@speak.com",
+    email: "alarcon@chilegames.com",
     servers: []
 });
 const idAlarcon = resultadoAlarcon.insertedId;
 print(`ID de Alarcon: ${idAlarcon}`);
 
-// --- 3. Inserción del Servidor ---
-console.log("--- Creando Servidor ---");
+// 3. Inserción del Servidor
+console.log("Creando Servidor");
 
 // Generamos IDs únicos AHORA para usarlos DENTRO del documento.
 // Esto es útil para que el ID del canal sea un campo propio
@@ -44,17 +39,17 @@ const idCanalGeneral = new ObjectId();
 const idCanalProyectos = new ObjectId();
 
 const resultadoServidor = db.servers.insertOne({
-    name: "Data Science Hub",
+    name: "Chat de desarrollo Chilegames",
     // Usamos la variable 'idAranguiz' capturada antes para la referencia.
     owner_id: idAranguiz,
     // 'channels' es un array de documentos INC_RUSTADOS (embedded)
     channels: [{
-        channel_id: idCanalGeneral, // Usamos el ID generado
+        channel_id: idCanalGeneral,
         name: "general",
         type: "text"
     }, {
         channel_id: idCanalProyectos,
-        name: "project-work",
+        name: "proyectos",
         type: "text"
     }],
     messages: [] // Array para mensajes recientes (patrón de incrustación)
@@ -63,7 +58,7 @@ const resultadoServidor = db.servers.insertOne({
 const idServidor = resultadoServidor.insertedId;
 print(`ID del Servidor: ${idServidor}`);
 
-// --- 4. Actualizar Usuarios para Pertenencia al Servidor (UPDATE) ---
+// 4. Actualizar Usuarios para Pertenencia al Servidor (UPDATE)
 console.log("--- Actualizando pertenencia de usuarios ---");
 
 // 'updateOne' busca un documento ({_id: ...}) y lo modifica ({$push: ...})
@@ -80,8 +75,8 @@ db.users.updateOne({ _id: idAlarcon }, {
     $push: { servers: { server_id: idServidor, nickname: "Chencho" } }
 });
 
-// --- 5. Inserción de Mensajes Recientes (INC_RUSTADO) ---
-console.log("--- Insertando mensaje reciente (incrustado) ---");
+// 5. Inserción de Mensajes Recientes (INC_RUSTADO)
+console.log("Insertando mensaje reciente (incrustado)");
 
 // Buscamos el servidor Y el canal específico (por su 'channel_id')
 db.servers.updateOne({
@@ -115,3 +110,31 @@ db.messages.insertOne({
 });
 
 console.log("--- Proceso de Creación Completado ---");
+// ... (Tu código anterior termina aquí)
+
+// --- 7. Lectura de Datos (READ) ---
+console.log("--- Leyendo mensajes del canal General ---");
+// Buscamos el servidor y proyectamos solo los mensajes de un canal específico
+// O simplemente buscamos todos los usuarios que pertenecen a un servidor específico.
+const usuariosDelServidor = db.users.find({ 
+    "servers.server_id": idServidor 
+});
+// Iteramos para mostrar resultados (necesario para evidenciar que funciona en el output)
+usuariosDelServidor.forEach(u => print(`Usuario en servidor: ${u.username}`));
+
+// --- 8. Eliminación de Datos (DELETE) ---
+console.log("--- Eliminando un mensaje histórico ---");
+// Supongamos que el mensaje de Bittner tenía un error y debe borrarse.
+// Usamos deleteOne filtrando por el autor y el contenido (o ID si lo tuvieras guardado).
+const resultadoBorrado = db.messages.deleteOne({
+    author_id: idBittner,
+    server_id: idServidor
+});
+print(`Mensajes borrados: ${resultadoBorrado.deletedCount}`);
+
+// Verificación final
+console.log("--- Verificando eliminación ---");
+const mensajeBuscado = db.messages.findOne({ author_id: idBittner });
+if (!mensajeBuscado) {
+    print("El mensaje ha sido eliminado exitosamente.");
+}
