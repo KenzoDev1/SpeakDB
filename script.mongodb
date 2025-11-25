@@ -67,7 +67,7 @@ db.users.updateOne({ _id: idAranguiz }, {
     $push: { servers: { server_id: idServidor, nickname: "Kenaii" } }
 });
 
-db.users.updateOne({ _id: bittnerId }, {
+db.users.updateOne({ _id: idBittner }, {
     $push: { servers: { server_id: idServidor, nickname: "Kenzo" } }
 });
 
