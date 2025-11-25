@@ -1,6 +1,11 @@
 // 1. Seleccionar la Base de Datos
 use('ChilegamesDB');
 
+// LIMPIEZA PREVIA
+db.users.drop();
+db.servers.drop();
+db.messages.drop();
+
 // 2. Inserción de Usuarios y Captura de IDs
 console.log("Creando Usuarios");
 
